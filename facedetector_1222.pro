@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui
-
+CONFIG += c++11
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = facedetector_1222
@@ -16,10 +16,12 @@ LIBS += -L/usr/local/lib -lopencv_shape -lopencv_stitching -lopencv_objdetect -l
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    imageloader.cpp
+    imageloader.cpp \
+    EyeDetector.cpp
 
 HEADERS  += mainwindow.h \
-    imageloader.h
+    imageloader.h \
+    EyeDetector.h
 
 FORMS    += mainwindow.ui
 

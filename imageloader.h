@@ -8,6 +8,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "EyeDetector.h"
+
 using namespace cv;
 
 class ImageLoader : public QThread
@@ -30,6 +32,8 @@ public:
 
 signals:
     void processedImage(const QImage& image);
+    void processedModifyImage(const QImage& image);
+    void processedEyeImage(const QImage& image);
     void errorEvent(const ErrorEvent& event);
 
 protected:
@@ -71,17 +75,28 @@ public:
 public slots:
 
 
+public:
+    EyeDetector m_eyedetector;
+
 private:
     bool isStop;
     CaptureMode mode;
     QMutex mutex;
     QWaitCondition condition;
-    Mat frame;
+
     int frame_rate;
     VideoCapture capture;
-    Mat frame_RGB;
-    QImage img;
+
     QString main_filename;
+
+    CascadeClassifier faceCascade;
+    CascadeClassifier eyeCascade;
+
+    std::vector<Rect> face_vec;
+    std::vector<Rect> eye_vec;
+
+    void initDetector();
+    QImage cvt2QImage(Mat frame);
 };
 
 #endif // IMAGELOADER_H

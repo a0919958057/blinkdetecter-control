@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent) :
   m_image_loader = new ImageLoader(this);
 
   connect(m_image_loader, SIGNAL(processedImage(QImage)), this, SLOT(updateImageshow(QImage)));
+  connect(m_image_loader, SIGNAL(processedModifyImage(QImage)), this, SLOT(updateModifyImageshow(QImage)));
+  connect(m_image_loader, SIGNAL(processedEyeImage(QImage)), this, SLOT(updateEyeImageshow(QImage)));
 }
 
 MainWindow::~MainWindow()
@@ -74,6 +76,18 @@ void MainWindow::updateImageshow(const QImage& image)
     ui->imageshow_raw->setPixmap(QPixmap::fromImage(image, Qt::AutoColor).scaled(ui->imageshow_raw->size(),Qt::KeepAspectRatio));
 }
 
+void MainWindow::updateModifyImageshow(const QImage &image)
+{
+    ui->imageshow_result->setPixmap(QPixmap::fromImage(image, Qt::AutoColor).scaled(ui->imageshow_result->size(),Qt::KeepAspectRatio));
+}
+
+void MainWindow::updateEyeImageshow(const QImage &image)
+{
+    ui->imageshow_eye->setPixmap(QPixmap::fromImage(image, Qt::AutoColor).scaled(ui->imageshow_eye->size(),Qt::KeepAspectRatio));
+}
+
+
+
 void MainWindow::on_btn_start_clicked()
 {
     if(!m_image_loader->isReady()) {
@@ -91,4 +105,15 @@ void MainWindow::on_btn_stop_clicked()
     m_image_loader->Stop();
     ui->btn_start->setEnabled(true);
     ui->btn_stop->setEnabled(false);
+}
+
+void MainWindow::on_checkBox_blink_clicked(bool checked)
+{
+    m_image_loader->m_eyedetector.set_enable_detect(checked);
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    static int count_image(0);
+    m_image_loader->m_eyedetector.save_eyeimage(count_image++);
 }

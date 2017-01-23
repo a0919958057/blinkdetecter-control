@@ -1,7 +1,13 @@
 #include "imageloader.h"
 
-ImageLoader::ImageLoader(QObject *parent) : QThread(parent)
-{
+ImageLoader::ImageLoader(QObject *parent) : QThread(parent) {
+    faceCascade.load("/home/taiwanet/cascadeFile.xml");
+    eyeCascade.load("/home/taiwanet/ojoD.xml");
+
+    // Initizing the EyeDetector with describe XML file;
+    m_eyedetector.set_classifier(eyeCascade,eye_vec);
+
+    // Default Stop running with Online mode
     isStop = true;
     mode = ONLINE_MODE;
     //capture.open(0);
@@ -16,33 +22,73 @@ ImageLoader::~ImageLoader() {
     wait();
 }
 
+QImage ImageLoader::cvt2QImage(Mat frame)
+{
+
+    Mat frame_RGB;
+
+    if(frame.channels() == 3) {
+        cvtColor(frame, frame_RGB, CV_BGR2RGB);
+        return QImage(
+                    reinterpret_cast<const unsigned char*>(frame_RGB.data),
+                    frame.cols,
+                    frame.rows,
+                    QImage::Format_RGB888);
+    }
+    else {
+        return QImage(
+                    reinterpret_cast<const unsigned char*>(frame.data),
+                    frame.cols,
+                    frame.rows,
+                    QImage::Format_Grayscale8);
+    }
+}
+
 void ImageLoader::run()
 {
-    int delay = (1000/frame_rate);
+    int delay = frame_rate;
 
     if(capture.isOpened()) {
+
+        // Initize the detector with 640x480 OUTPUT and Without Rotation
+        initDetector();
+
         while(!isStop) {
-            if (!capture.read(frame))
+
+            // TODO: replace capture to m_eyedetector
+            if (!m_eyedetector.update_image())
             {
                 isStop = true;
             }
-            if(frame.channels() == 3) {
-                cvtColor(frame, frame_RGB, CV_BGR2RGB);
-                img = QImage(
-                            reinterpret_cast<const unsigned char*>(frame_RGB.data),
-                            frame_RGB.cols,
-                            frame_RGB.rows,
-                            QImage::Format_RGB888);
+
+            // Process the detect processing
+            m_eyedetector.detect_eye();
+            Mat eye, modify_frame;
+            m_eyedetector.show_frame(modify_frame, eye);
+
+
+            Mat raw_frame = m_eyedetector.get_raw_frame();
+            // TODO: make new SIGNAL to emit Processed Image to GUI
+            cv::cvtColor(raw_frame,raw_frame,CV_BGR2RGB);
+            QImage raw_image(QImage(
+                                 reinterpret_cast<const unsigned char*>(raw_frame.data),
+                                 raw_frame.cols,
+                                 raw_frame.rows,
+                                 QImage::Format_RGB888));
+
+            QImage modify_image(cvt2QImage(modify_frame));
+
+            emit processedImage(raw_image);
+            emit processedModifyImage(modify_image);
+
+            if(eye.size != 0) {
+                emit processedEyeImage(QImage(
+                                           reinterpret_cast<const unsigned char*>(eye.data),
+                                           eye.cols,
+                                           eye.rows,
+                                           QImage::Format_Grayscale8));
             }
-            else {
-                img = QImage(
-                            reinterpret_cast<const unsigned char*>(frame_RGB.data),
-                            frame_RGB.cols,
-                            frame_RGB.rows,
-                            QImage::Format_Grayscale8);
-            }
-            emit processedImage(img);
-            //
+
             this->msleep(delay);
         }
 
@@ -154,4 +200,8 @@ int ImageLoader::getCameraCount()
     }
     camera.release();
     return (device_counts - 1);
+}
+
+void ImageLoader::initDetector() {
+    m_eyedetector.init(capture, Size(640, 480), RotFlag::ROT_CW_90);
 }

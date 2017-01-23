@@ -36,8 +36,14 @@ private slots:
 
     void on_btn_stop_clicked();
 
+    void on_checkBox_blink_clicked(bool checked);
+
+    void on_pushButton_clicked();
+
 public slots:
     void updateImageshow(const QImage& image);
+    void updateModifyImageshow(const QImage& image);
+    void updateEyeImageshow(const QImage &image);
 
 private:
   Ui::MainWindow *ui;

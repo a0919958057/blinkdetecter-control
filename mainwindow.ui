@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>568</width>
-    <height>606</height>
+    <width>880</width>
+    <height>484</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,37 +19,11 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>291</width>
-      <height>501</height>
+      <width>551</width>
+      <height>381</height>
      </rect>
     </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QGroupBox" name="groupBox_2">
-       <property name="title">
-        <string>Image Raw</string>
-       </property>
-       <widget class="QLabel" name="imageshow_raw">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>30</y>
-          <width>271</width>
-          <height>211</height>
-         </rect>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::WinPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Sunken</enum>
-        </property>
-        <property name="text">
-         <string>Raw Image</string>
-        </property>
-       </widget>
-      </widget>
-     </item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QGroupBox" name="groupBox">
        <property name="title">
@@ -60,8 +34,8 @@
          <rect>
           <x>10</x>
           <y>30</y>
-          <width>271</width>
-          <height>211</height>
+          <width>251</width>
+          <height>341</height>
          </rect>
         </property>
         <property name="frameShape">
@@ -76,15 +50,41 @@
        </widget>
       </widget>
      </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_2">
+       <property name="title">
+        <string>Image Raw</string>
+       </property>
+       <widget class="QLabel" name="imageshow_raw">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>251</width>
+          <height>341</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::WinPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
+        <property name="text">
+         <string>Raw Image</string>
+        </property>
+       </widget>
+      </widget>
+     </item>
     </layout>
    </widget>
    <widget class="QGroupBox" name="groupBox_3">
     <property name="geometry">
      <rect>
-      <x>310</x>
+      <x>570</x>
       <y>10</y>
-      <width>251</width>
-      <height>141</height>
+      <width>301</width>
+      <height>131</height>
      </rect>
     </property>
     <property name="title">
@@ -95,7 +95,7 @@
       <rect>
        <x>10</x>
        <y>50</y>
-       <width>231</width>
+       <width>281</width>
        <height>41</height>
       </rect>
      </property>
@@ -135,6 +135,69 @@
       <string>Start/Stop</string>
      </property>
     </widget>
+    <widget class="QCheckBox" name="checkBox_blink">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>100</y>
+       <width>141</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Enable Blink Detect</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_4">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>150</y>
+      <width>301</width>
+      <height>241</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Eye tracking Result</string>
+    </property>
+    <widget class="QLabel" name="imageshow_eye">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>30</y>
+       <width>251</width>
+       <height>161</height>
+      </rect>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::WinPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+     <property name="text">
+      <string>Eye Image</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>200</y>
+       <width>121</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <underline>false</underline>
+      </font>
+     </property>
+     <property name="text">
+      <string>CaptureEye</string>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -142,7 +205,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>568</width>
+     <width>880</width>
      <height>23</height>
     </rect>
    </property>
