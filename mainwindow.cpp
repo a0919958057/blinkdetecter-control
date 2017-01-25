@@ -4,7 +4,8 @@
 
 MainWindow::MainWindow(QWidget *parent) :
   QMainWindow(parent),
-  ui(new Ui::MainWindow)
+  ui(new Ui::MainWindow),
+  d_timerId(-1)
 {
   ui->setupUi(this);
   m_mode_group = new QActionGroup(this);
@@ -16,6 +17,24 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(m_image_loader, SIGNAL(processedImage(QImage)), this, SLOT(updateImageshow(QImage)));
   connect(m_image_loader, SIGNAL(processedModifyImage(QImage)), this, SLOT(updateModifyImageshow(QImage)));
   connect(m_image_loader, SIGNAL(processedEyeImage(QImage)), this, SLOT(updateEyeImageshow(QImage)));
+
+  ui->dockWidget_2->setAllowedAreas(Qt::BottomDockWidgetArea);
+  plotter = new DetectorPlot(this);
+
+  // Setup the plotter data source
+  plotter->mainCurve->setData(
+              reinterpret_cast<QwtSeriesData<QPointF>*>(&m_image_loader->m_eyedetector.dataRecord));
+  ui->dockWidget_2->setWidget(
+              reinterpret_cast<QWidget*>(plotter));
+
+  // Setup the plotter thread
+  plotterSamplingThread = new SamplingThread(this);
+  plotterSamplingThread->registerEyeDetector(m_image_loader->m_eyedetector);
+  plotterSamplingThread->start(QThread::Priority::NormalPriority);
+  plotterSamplingThread->setInterval(1);
+
+  d_timerId = startTimer(50);
+
 }
 
 MainWindow::~MainWindow()
@@ -86,6 +105,15 @@ void MainWindow::updateEyeImageshow(const QImage &image)
     ui->imageshow_eye->setPixmap(QPixmap::fromImage(image, Qt::AutoColor).scaled(ui->imageshow_eye->size(),Qt::KeepAspectRatio));
 }
 
+void MainWindow::timerEvent(QTimerEvent *event)
+{
+    if(event->timerId() == d_timerId) {
+        m_image_loader->m_eyedetector.dataRecord_mutex.lock();
+        plotter->replot();
+        m_image_loader->m_eyedetector.dataRecord_mutex.unlock();
+    }
+}
+
 
 
 void MainWindow::on_btn_start_clicked()
@@ -114,6 +142,12 @@ void MainWindow::on_checkBox_blink_clicked(bool checked)
 
 void MainWindow::on_pushButton_clicked()
 {
-    static int count_image(0);
-    m_image_loader->m_eyedetector.save_eyeimage(count_image++);
+    m_image_loader->m_eyedetector.save_eyeimage();
+}
+
+void MainWindow::on_btn_clearplot_clicked()
+{
+    m_image_loader->m_eyedetector.dataRecord_mutex.lock();
+    m_image_loader->m_eyedetector.dataRecord.clearStaleData();
+    m_image_loader->m_eyedetector.dataRecord_mutex.unlock();
 }

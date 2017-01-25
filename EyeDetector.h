@@ -6,6 +6,10 @@
 #include <fstream>
 #include <QTime>
 
+#include <qmutex.h>
+
+#include "detectdata.h"
+
 using namespace cv;
 using namespace std;
 
@@ -48,6 +52,13 @@ public:
 
     Mat get_raw_frame();
 
+    QMutex dataRecord_mutex;
+    DetectData dataRecord;
+
+    QMutex pending_mutex;
+    double minVal;
+    double absSum;
+
 protected:
 
 	void reportStatus(EyeDetectorStatus);
@@ -70,10 +81,12 @@ protected:
 	std::vector<Rect>* detected_object;
 	Rect m_reg_eye;
 
-	double minVal;
+    int eye_template_image_count;
+    int eye_template_image_useId;
+
+
 	Point minLoc;
 
-	double absSum;
 
 	static EyeDetector* self;
 
@@ -83,15 +96,18 @@ protected:
     bool isEnableBlinkDetect;
 
 	fstream app_blink_data;
+
 private:
     // Coding to here
     QTime time_stamp;
 //	LARGE_INTEGER tStart, tEnd, ts;
 
+
 public:
 
 	bool record_data(int data_id);
 	bool open_recordfile(int data_id);
-	void save_eyeimage(int image_id);
+    void save_eyeimage();
+    bool getIsEnableBlinkDetect() const;
 };
 

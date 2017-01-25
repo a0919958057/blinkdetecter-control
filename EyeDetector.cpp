@@ -11,7 +11,11 @@ EyeDetector::EyeDetector() :
 	m_classifier(nullptr),
 	proc_count(0),
     is_datafile_open(false),
-    isEnableBlinkDetect(false) {
+    isEnableBlinkDetect(false),
+    eye_template_image_count(0),
+    eye_template_image_useId(0) {
+
+    pending_mutex.unlock();
 
 	// Setup the Window property
 //	namedWindow(WINDOW_NAME_ORIGIN_IMAGE, WINDOW_AUTOSIZE);
@@ -94,77 +98,83 @@ void EyeDetector::show_frame(Mat& modify_frame, Mat& eye_frame) {
 	if (m_classifier != nullptr) {
 		
 		bool is_eye_detected = detect_eye();
+        Rect left_eye;
+        left_eye.x = 0;
+        left_eye.y = 0;
+        left_eye.width = 0;
+        left_eye.height = 0;
         for(auto eyes : (*detected_object)) {
-			if (is_eye_detected)
-				rectangle(modify_frame, eyes, CV_RGB(255, 0, 0), 2);
-			else {
-				rectangle(modify_frame, eyes, CV_RGB(0, 0, 255), 2);
-			}
-
-			// Register the eye frame
-            m_eye = Mat(m_frame, eyes);
-			// Register the eye search frame
-			Rect eyes_sch_win(eyes);
-			eyes.width += 50;
-			eyes.height += 50;
-			eyes.x -= 25;
-			eyes.y -= 25;
-
-            // Check the size is ok
-            if(eyes.y - eyes.height <= 0) continue;
-            if(eyes.x - eyes.width <= 0) continue;
-
-            if(eyes.y + eyes.height >= cap_size.width) continue;
-            if(eyes.y - eyes.height >= cap_size.width) continue;
-
-            if(eyes.x + eyes.width >= cap_size.height) continue;
-            if(eyes.x - eyes.width >= cap_size.height) continue;
-
-
-			m_eye_window = Mat(m_frame, eyes);
-			cvtColor(m_eye_window, m_eye_window, CV_RGB2GRAY);
-
-			Mat hsv_eye;
-            cvtColor(m_eye, hsv_eye, CV_RGB2HSV);
-            cvtColor(m_eye, m_eye, CV_RGB2GRAY);
-			//vector<Mat> hsv_planes;
-			//split(hsv_eye, hsv_planes);
-			//Mat v_hist;
-
-			////equalizeHist(hsv_planes[2], v_hist);
-			//threshold(hsv_planes[2], v_hist, 30, 255, ThresholdTypes::THRESH_BINARY);
-			//imshow("Equalized Image", v_hist);
-
-			/********* Detect Eye *********/
-            if(isEnableBlinkDetect)
-                isDetected_blink = detect_blink();
-			/******************************/
-
-            m_eye_window.copyTo(eye_frame);
-
-			/****** Add the text on image ******/
-			char str_buffer[64] = { 0 };
-            sprintf(str_buffer, "(%2.2f,%2.2f)",
-				(double)cap_size.height/ (double)eyes.width, 
-				(double)cap_size.width/ (double)eyes.height);
-            putText(modify_frame, String(str_buffer), Point(eyes.x, eyes.y - 5), FONT_HERSHEY_COMPLEX, 0.9, CV_RGB(255,255,255), 2.5,8);
-            sprintf(str_buffer, "%fFPS",m_cap->get(CAP_PROP_FPS));
-            putText(modify_frame, String(str_buffer), Point(3, 27), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(128, 128, 128), 3);
-            putText(modify_frame, String(str_buffer), Point(0, 25), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 0, 0), 3);
-            sprintf(str_buffer, "Proc Count %d", proc_count);
-            putText(modify_frame, String(str_buffer), Point(3, 50), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(128, 128, 128), 3);
-            putText(modify_frame, String(str_buffer), Point(0, 48), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 0, 0), 3);
-            sprintf(str_buffer, "Compare value = %f", minVal);
-            putText(modify_frame, String(str_buffer), Point(3, 73), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(128, 128, 128), 3);
-            putText(modify_frame, String(str_buffer), Point(0, 71), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 0, 0), 3);
-
-			/***********************************/
-
-			
-			
+            if(eyes.x > left_eye.x) {
+                left_eye = eyes;
+            }
 
 		}
-        modify_frame = modify_frame;
+
+        if (is_eye_detected)
+            rectangle(modify_frame, left_eye, CV_RGB(255, 0, 0), 2);
+        else {
+            rectangle(modify_frame, left_eye, CV_RGB(0, 0, 255), 2);
+        }
+
+        // Register the eye frame
+        m_eye = Mat(m_frame, left_eye);
+        // Register the eye search frame
+        Rect eyes_sch_win(left_eye);
+        left_eye.width += 50;
+        left_eye.height += 50;
+        left_eye.x -= 25;
+        left_eye.y -= 25;
+
+        // Check the size is ok
+        if(left_eye.y <= 0) return;
+        if(left_eye.x <= 0) return;
+
+        if(left_eye.y + left_eye.height >= cap_size.width) return;
+        if(left_eye.y - left_eye.height >= cap_size.width) return;
+
+        if(left_eye.x + left_eye.width >= cap_size.height) return;
+        if(left_eye.x - left_eye.width >= cap_size.height) return;
+
+
+        m_eye_window = Mat(m_frame, left_eye);
+        cvtColor(m_eye_window, m_eye_window, CV_RGB2GRAY);
+
+        Mat hsv_eye;
+        cvtColor(m_eye, hsv_eye, CV_RGB2HSV);
+        cvtColor(m_eye, m_eye, CV_RGB2GRAY);
+        //vector<Mat> hsv_planes;
+        //split(hsv_eye, hsv_planes);
+        //Mat v_hist;
+
+        ////equalizeHist(hsv_planes[2], v_hist);
+        //threshold(hsv_planes[2], v_hist, 30, 255, ThresholdTypes::THRESH_BINARY);
+        //imshow("Equalized Image", v_hist);
+
+        /********* Detect Eye *********/
+        if(isEnableBlinkDetect)
+            isDetected_blink = detect_blink();
+        /******************************/
+
+        m_eye_window.copyTo(eye_frame);
+
+        /****** Add the text on image ******/
+        char str_buffer[64] = { 0 };
+        sprintf(str_buffer, "(%2.2f,%2.2f)",
+            (double)cap_size.height/ (double)left_eye.width,
+            (double)cap_size.width/ (double)left_eye.height);
+        putText(modify_frame, String(str_buffer), Point(left_eye.x, left_eye.y - 5), FONT_HERSHEY_COMPLEX, 0.9, CV_RGB(255,255,255), 2.5,8);
+        sprintf(str_buffer, "%fFPS",m_cap->get(CAP_PROP_FPS));
+        putText(modify_frame, String(str_buffer), Point(3, 27), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(128, 128, 128), 3);
+        putText(modify_frame, String(str_buffer), Point(0, 25), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 0, 0), 3);
+        sprintf(str_buffer, "Proc Count %d", proc_count);
+        putText(modify_frame, String(str_buffer), Point(3, 50), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(128, 128, 128), 3);
+        putText(modify_frame, String(str_buffer), Point(0, 48), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 0, 0), 3);
+        sprintf(str_buffer, "Compare value = %f", minVal);
+        putText(modify_frame, String(str_buffer), Point(3, 73), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(128, 128, 128), 3);
+        putText(modify_frame, String(str_buffer), Point(0, 71), FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0, 0, 0), 3);
+
+        /***********************************/
+
 	}
 }
 
@@ -225,9 +235,9 @@ void EyeDetector::rot90(Mat &image, RotFlag flag) {
 }
 
 bool EyeDetector::detect_blink() {
-	static int image_count(0);
+
 	stringstream ss;
-	ss << ".//template//temp" << image_count << ".jpg";
+    ss << ".//template//temp" << eye_template_image_useId << ".jpg";
 	string str;
 	ss >> str;
 
@@ -241,6 +251,9 @@ bool EyeDetector::detect_blink() {
 
 	
 	matchTemplate(m_eye_window, image_template, result, CV_TM_SQDIFF_NORMED);
+
+    // Lock the data, inorder to record new min Val
+    pending_mutex.lock();
 	minMaxLoc(result, &minVal, 0, &minLoc, 0);
 
 	// Using Histgram Compare
@@ -270,7 +283,14 @@ bool EyeDetector::detect_blink() {
 
 	if (minVal > 4744717) return true;
 
+    pending_mutex.unlock();
+
 	return false;
+}
+
+bool EyeDetector::getIsEnableBlinkDetect() const
+{
+    return isEnableBlinkDetect;
 }
 
 template<size_t STR_SIZE>
@@ -332,10 +352,15 @@ bool EyeDetector::record_data(int data_id) {
 	// Get past time
     float m_time = static_cast<float>(time_stamp.elapsed()) / 1000.0;
 
+    pending_mutex.lock();
+
 	app_blink_data
 		<< setw(15) << setprecision(6) << m_time
 		<< setw(15) << setprecision(6) << absSum
 		<< endl;
+
+    pending_mutex.unlock();
+
 
 }
 
@@ -357,9 +382,11 @@ bool EyeDetector::open_recordfile(int data_id) {
 }
 
 
-void EyeDetector::save_eyeimage(int image_id) {
+void EyeDetector::save_eyeimage() {
+
+    eye_template_image_useId = eye_template_image_count;
 	stringstream ss;
-	ss << ".//template//temp" << image_id++ << ".jpg";
+    ss << ".//template//temp" << eye_template_image_count++ << ".jpg";
 	string str;
 	ss >> str;
 

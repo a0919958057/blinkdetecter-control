@@ -46,7 +46,7 @@ QImage ImageLoader::cvt2QImage(Mat frame)
 
 void ImageLoader::run()
 {
-    int delay = frame_rate;
+    int delay = 5;
 
     if(capture.isOpened()) {
 
@@ -59,6 +59,7 @@ void ImageLoader::run()
             if (!m_eyedetector.update_image())
             {
                 isStop = true;
+                break;
             }
 
             // Process the detect processing
@@ -81,11 +82,15 @@ void ImageLoader::run()
             emit processedImage(raw_image);
             emit processedModifyImage(modify_image);
 
-            if(eye.size != 0) {
+
+
+            if(!eye.empty()) {
+                Mat resized_eye;
+                resize(eye,resized_eye, Size(320,240));
                 emit processedEyeImage(QImage(
-                                           reinterpret_cast<const unsigned char*>(eye.data),
-                                           eye.cols,
-                                           eye.rows,
+                                           reinterpret_cast<const unsigned char*>(resized_eye.data),
+                                           resized_eye.cols,
+                                           resized_eye.rows,
                                            QImage::Format_Grayscale8));
             }
 
