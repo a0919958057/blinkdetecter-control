@@ -45,6 +45,8 @@ private slots:
 
     void on_btn_clearplot_clicked();
 
+    void on_checkBox_clicked(bool checked);
+
 public slots:
     void updateImageshow(const QImage& image);
     void updateModifyImageshow(const QImage& image);

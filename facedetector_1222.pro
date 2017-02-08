@@ -31,7 +31,8 @@ HEADERS  += mainwindow.h \
     EyeDetector.h \
     detectorplot.h \
     samplingthread.h \
-    detectdata.h
+    detectdata.h \
+    configure.h
 
 FORMS    += mainwindow.ui
 

@@ -44,11 +44,15 @@ public:
 
     void show_frame(Mat& modify_frame, Mat& eye_frame);
 
-	bool detect_eye();
+    bool detect_face(Mat& roi_image);
 
-	void set_classifier(CascadeClassifier&, std::vector<Rect>&);
+    bool detect_eye(Mat& roi_image, Size min, Size max);
 
-    void set_enable_detect(bool enable);
+    void set_classifier(CascadeClassifier &eye_classifier, CascadeClassifier &face_classifier, std::vector<Rect>&, std::vector<Rect>&);
+
+    void set_enable_blink_detect(bool enable);
+
+    void set_enable_face_detect(bool enable);
 
     Mat get_raw_frame();
 
@@ -77,10 +81,16 @@ protected:
 	Mat m_eye_window;
 	Size cap_size;
 	RotFlag cap_rot;
-	CascadeClassifier* m_classifier;
-	std::vector<Rect>* detected_object;
+
+    CascadeClassifier* m_eye_classifier;
+    CascadeClassifier* m_face_classifier;
+
+    std::vector<Rect>* m_face_detected_object;
+    std::vector<Rect>* m_eye_detected_object;
 	Rect m_reg_eye;
 
+    // Used by Eye Image saving and template loading stage
+    // To loading newest Eye template image or Save new Eye Image and update Loading template object
     int eye_template_image_count;
     int eye_template_image_useId;
 
@@ -94,6 +104,7 @@ protected:
 
 	bool is_datafile_open;
     bool isEnableBlinkDetect;
+    bool isEnableFaceDetect;
 
 	fstream app_blink_data;
 

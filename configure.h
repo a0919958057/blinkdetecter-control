@@ -1,0 +1,7 @@
+#ifndef CONFIGURE_H
+#define CONFIGURE_H
+
+#define EYE_TEMPLATE_SIZE_X
+#define EYE_TEMPLATE_SIZE_Y
+
+#endif // CONFIGURE_H

@@ -8,10 +8,12 @@ EyeDetector::EyeDetector() :
 	cap_size(640, 480),
 	m_cap(nullptr),
 	cap_rot(RotFlag::ROT_0),
-	m_classifier(nullptr),
+    m_eye_classifier(nullptr),
+    m_face_classifier(nullptr),
 	proc_count(0),
     is_datafile_open(false),
     isEnableBlinkDetect(false),
+    isEnableFaceDetect(true),
     eye_template_image_count(0),
     eye_template_image_useId(0) {
 
@@ -94,21 +96,69 @@ void EyeDetector::show_frame(Mat& modify_frame, Mat& eye_frame) {
     //imshow(WINDOW_NAME_ORIGIN_IMAGE, m_frame);
 	modify_frame = m_frame.clone();
 
+    Mat gray_frame;
+    cvtColor(modify_frame, gray_frame, CV_RGB2GRAY);
 
-	if (m_classifier != nullptr) {
+    Rect roi_rect;
+
+    if (m_eye_classifier != nullptr) {
 		
-		bool is_eye_detected = detect_eye();
+        bool is_face_detected = detect_face(gray_frame);
+        bool is_eye_detected(false);
+
+        if(isEnableFaceDetect) {
+
+            if(m_face_detected_object->size() > 0) {
+
+                // Compute roi-rectangle for eye search Window
+                Rect face = m_face_detected_object->front();
+
+                roi_rect = Rect(face.x + face.width/2, face.y + face.height / 8, face.width / 2, face.height * 0.4);
+
+                Mat roi_eye_image(gray_frame, roi_rect);
+
+                rectangle(modify_frame, roi_rect, CV_RGB(0, 0, 255), 2);
+
+                // Process the Detect eye
+                is_eye_detected = detect_eye(
+                            roi_eye_image,
+                            Size(roi_rect.width * 0.3, roi_rect.height * 0.3),
+                            Size(roi_rect.width * 0.6, roi_rect.height * 0.6));
+
+                if (is_face_detected)
+                    rectangle(modify_frame, m_face_detected_object->front(), CV_RGB(255, 0, 128), 2);
+                else {
+                    rectangle(modify_frame, m_face_detected_object->front(), CV_RGB(255, 0, 255), 2);
+                }
+            }
+
+        }
+        else {
+
+
+
+            is_eye_detected = detect_eye(
+                        gray_frame,
+                        Size(cap_size.height / 5, cap_size.width / 10),
+                        Size(cap_size.height / 2, cap_size.width / 7));
+        }
+
+
+
+        // Finding most right eye in the frame
         Rect left_eye;
         left_eye.x = 0;
         left_eye.y = 0;
         left_eye.width = 0;
         left_eye.height = 0;
-        for(auto eyes : (*detected_object)) {
+        for(auto eyes : (*m_eye_detected_object)) {
             if(eyes.x > left_eye.x) {
                 left_eye = eyes;
+                left_eye.x += roi_rect.x;
+                left_eye.y += roi_rect.y;
             }
 
-		}
+        }
 
         if (is_eye_detected)
             rectangle(modify_frame, left_eye, CV_RGB(255, 0, 0), 2);
@@ -120,10 +170,10 @@ void EyeDetector::show_frame(Mat& modify_frame, Mat& eye_frame) {
         m_eye = Mat(m_frame, left_eye);
         // Register the eye search frame
         Rect eyes_sch_win(left_eye);
-        left_eye.width += 50;
-        left_eye.height += 50;
-        left_eye.x -= 25;
-        left_eye.y -= 25;
+        left_eye.width += 40;
+        left_eye.height += 40;
+        left_eye.x -= 20;
+        left_eye.y -= 20;
 
         // Check the size is ok
         if(left_eye.y <= 0) return;
@@ -175,22 +225,48 @@ void EyeDetector::show_frame(Mat& modify_frame, Mat& eye_frame) {
 
         /***********************************/
 
-	}
+    }
 }
 
-bool EyeDetector::detect_eye() {
+bool EyeDetector::detect_face(Mat& roi_image) {
+    vector<Rect> face_new;
+
+    // TODO: Using Face Calssifier to detect face
+    m_face_classifier->detectMultiScale(
+                roi_image,
+                face_new,
+                1.1,
+                5,
+                CV_HAAR_MAGIC_VAL,
+                Size(200, 200),
+                Size(430, 430));
+
+    if(face_new.size() > 0) {
+        // If there found any face
+        *m_face_detected_object = face_new;
+        return true;
+    }
+
+    return false;
+
+}
+
+bool EyeDetector::detect_eye(Mat& roi_image, Size min, Size max) {
+
 	vector<Rect> eye_new;
 
-	m_classifier->detectMultiScale(
-		m_frame,
+    m_eye_classifier->detectMultiScale(
+        roi_image,
 		eye_new,
 		1.1,
 		5,
 		CV_HAAR_MAGIC_VAL,
-		Size(cap_size.height / 5, cap_size.width / 10),
-		Size(cap_size.height / 2, cap_size.width / 7));
+        min,
+        max);
+
+
 	if (eye_new.size() > 0) {
-		*detected_object = eye_new;
+        *m_eye_detected_object = eye_new;
 		return true;
 	}
 	else {
@@ -198,14 +274,27 @@ bool EyeDetector::detect_eye() {
 	}
 }
 
-void EyeDetector::set_classifier(CascadeClassifier &classifier, std::vector<Rect> &detected_set) {
-	m_classifier = &classifier;
-    detected_object = &detected_set;
+void EyeDetector::set_classifier(
+        CascadeClassifier &eye_classifier,
+        CascadeClassifier &face_classifier,
+        std::vector<Rect> &eye_detected_set,
+        std::vector<Rect> &face_detected_set ) {
+
+    // Register the Classifier and Results vector
+    m_eye_classifier = &eye_classifier;
+    m_face_classifier = &face_classifier;
+    m_face_detected_object = &face_detected_set;
+    m_eye_detected_object = &eye_detected_set;
 }
 
-void EyeDetector::set_enable_detect(bool enable)
+void EyeDetector::set_enable_blink_detect(bool enable)
 {
     isEnableBlinkDetect = enable;
+}
+
+void EyeDetector::set_enable_face_detect(bool enable)
+{
+    isEnableFaceDetect = enable;
 }
 
 Mat EyeDetector::get_raw_frame()

@@ -5,7 +5,7 @@ ImageLoader::ImageLoader(QObject *parent) : QThread(parent) {
     eyeCascade.load("/home/taiwanet/ojoD.xml");
 
     // Initizing the EyeDetector with describe XML file;
-    m_eyedetector.set_classifier(eyeCascade,eye_vec);
+    m_eyedetector.set_classifier(eyeCascade ,faceCascade,eye_vec , face_vec);
 
     // Default Stop running with Online mode
     isStop = true;
@@ -63,7 +63,6 @@ void ImageLoader::run()
             }
 
             // Process the detect processing
-            m_eyedetector.detect_eye();
             Mat eye, modify_frame;
             m_eyedetector.show_frame(modify_frame, eye);
 

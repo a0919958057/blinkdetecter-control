@@ -137,7 +137,7 @@ void MainWindow::on_btn_stop_clicked()
 
 void MainWindow::on_checkBox_blink_clicked(bool checked)
 {
-    m_image_loader->m_eyedetector.set_enable_detect(checked);
+    m_image_loader->m_eyedetector.set_enable_blink_detect(checked);
 }
 
 void MainWindow::on_pushButton_clicked()
@@ -150,4 +150,9 @@ void MainWindow::on_btn_clearplot_clicked()
     m_image_loader->m_eyedetector.dataRecord_mutex.lock();
     m_image_loader->m_eyedetector.dataRecord.clearStaleData();
     m_image_loader->m_eyedetector.dataRecord_mutex.unlock();
+}
+
+void MainWindow::on_checkBox_clicked(bool checked)
+{
+    m_image_loader->m_eyedetector.set_enable_face_detect(checked);
 }
